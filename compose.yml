@@ -1,0 +1,9 @@
+services:
+  backend:
+    build: .
+    container_name: pdm_back
+    ports:
+      - "40713:3000"
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
