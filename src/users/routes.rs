@@ -1,6 +1,9 @@
 use axum::{Router, routing::{get, post}, Json};
 use serde::{Serialize, Deserialize};
-use utils::utils;
+use crate::handlers::{http_handler::{ApiResponse, ApiError}};
+use crate::utils::utils;
+use tracing::error;
+
 // model
 #[derive(Serialize)]
 pub struct UserModel {
@@ -27,21 +30,41 @@ async fn get_users() -> Json<Vec<UserModel>> {
 }
 async fn get_user() { /* ... */ }
 
-async fn post_login(Json(payload): Json<LoginModel>) -> Json<Vec<LoginModel>> {
-    let payload_user_id = payload.user_id;
-    let payload_passwd = payload.passwd;
-    let mock_pass = "pass".to_string()
-    // let mock_hash = "3|$argon2id$v=19$m=65536,t=4,p=1$MFJCSVBOeGY1eVhKQnBsTw$g6j9pDVcQ1EDF4tK+EWUA2SsRsLlv0voa6Hpm3R8/Gk".to_string();
-    // let verify = utils.verify_password()
-    let verify = payload_passwd == mock_pass
-    let this_user = vec![
-        LoginModel { user_id: payload_user_id, passwd: payload_passwd },
-        LoginModel { user_id: "devLovers2".to_string(), passwd: "hash2".to_string() },
-    ];
+
+fn split_db_hash(input: &str) ->(Option<&Str>,&str) {
+    if let Some(idx) = input.find("$argon2") {
+        if let Some((pre, hash)) = input.split_once('|') {
+            return (Some(pre), hash);
+        }
+    }
+    (None, input)
+}
+
+
+async fn post_login(Json(payload): Json<LoginModel>) -> Result<ApiResponse<LoginModel>, ApiError> {
+    
+    let _payload_user_id = &payload.user_id;
+    let _payload_passwd  = &payload.passwd;
+
+    // 데모 검증 (추후 argon2 검증으로 교체)
+    // let mock_pass = "pass".to_string();
+    let mock_db_hash = "3|$argon2id$v=19$m=65536,t=4,p=1$MFJCSVBOeGY1eVhKQnBsTw$g6j9pDVcQ1EDF4tK+EWUA2SsRsLlv0voa6Hpm3R8/Gk".to_string();
+    // let mock_db_hash = "$argon2id$v=19$m=65536,t=4,p=1$MFJCSVBOeGY1eVhKQnBsTw$g6j9pDVcQ1EDF4tK+EWUA2SsRsLlv0voa6Hpm3R8/Gk".to_string();
+
+
+
+    let verify = match utils::verify_password(_payload_passwd, &mock_hash) {
+        Ok(v) => v,
+        Err(e) => {
+            // 여기서 로그 찍기
+            error!("password verify failed: {:?}", e);
+            return Err(ApiError::InternalServerError);
+        }
+    };
     if verify {
-        Json(this_user)
+        Ok(ApiResponse::JsonData(payload))
     } else {
-        
+        Err(ApiError::Unauthorized)
     }
 }
 
