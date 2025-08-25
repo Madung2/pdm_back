@@ -13,3 +13,10 @@
     ├── mod.rs
     └── utils.rs
 ```
+
+
+## cargo 명령어
+
+```bash
+cargo add sqlx --features mysql
+```

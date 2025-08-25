@@ -3,6 +3,9 @@ use serde::{Serialize, Deserialize};
 use crate::handlers::{http_handler::{ApiResponse, ApiError}};
 use crate::utils::utils;
 use tracing::error;
+use std::sync::Arc;
+use crate::states::AppState;
+
 
 // model
 #[derive(Serialize)]
@@ -10,8 +13,6 @@ pub struct UserModel {
     user_id : String,
     passwd: String
 }
-
-
 
 // model
 #[derive(Serialize, Deserialize)]
@@ -31,7 +32,7 @@ async fn get_users() -> Json<Vec<UserModel>> {
 async fn get_user() { /* ... */ }
 
 
-fn split_db_hash(input: &str) ->(Option<&Str>,&str) {
+fn split_db_hash(input: &str) ->(Option<&str>,&str) {
     if let Some(idx) = input.find("$argon2") {
         if let Some((pre, hash)) = input.split_once('|') {
             return (Some(pre), hash);
@@ -53,7 +54,7 @@ async fn post_login(Json(payload): Json<LoginModel>) -> Result<ApiResponse<Login
 
 
 
-    let verify = match utils::verify_password(_payload_passwd, &mock_hash) {
+    let verify = match utils::verify_password(_payload_passwd, &mock_db_hash) {
         Ok(v) => v,
         Err(e) => {
             // 여기서 로그 찍기
@@ -68,7 +69,7 @@ async fn post_login(Json(payload): Json<LoginModel>) -> Result<ApiResponse<Login
     }
 }
 
-pub fn users_router() -> Router { // 추후에 main_router에 머지할 꺼니까 
+pub fn users_router() -> Router<Arc<AppState>> { // 추후에 main_router에 머지할 꺼니까
     Router::new()
         .route("/users", get(get_users))
         .route("/users/:id", get(get_user))

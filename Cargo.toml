@@ -6,10 +6,12 @@ edition = "2024"
 [dependencies]
 axum = "0.7"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-serde = { version = "1.0", features  = ["derive"]}
+serde = { version = "1.0", features  = ["derive"]} # serialize
 serde_json = "1.0"
-argon2 = "0.5"
-password-hash = "0.5"
+argon2 = "0.5" # hash
+password-hash = "0.5" # hash
 # 디버그
-tracing = "0.1"
+tracing = "0.1" # log
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sqlx = { version = "0.8.6", features = ["mysql", "runtime-tokio"] } # sql
+dotenv = "0.15.0" # env
