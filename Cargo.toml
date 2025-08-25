@@ -15,3 +15,4 @@ tracing = "0.1" # log
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sqlx = { version = "0.8.6", features = ["mysql", "runtime-tokio"] } # sql
 dotenv = "0.15.0" # env
+diesel = { version = "2.2.12", features = ["mysql"] }

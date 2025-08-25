@@ -2,14 +2,14 @@ use axum::{Router, routing::get};
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use dotenv::dotenv;
-use std::env;
+
 use sqlx::mysql::MySqlPoolOptions;
 
 mod users;
 mod handlers;
 mod utils;
 mod states;
+mod settings;
 
 use users::routes as user_routes;
 use states::AppState;
@@ -33,22 +33,12 @@ async fn main() {
         .with_env_filter("info")  // RUST_LOG=debug cargo run 하면 debug도 찍힘
         .init();
 
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    println!("DATABASE_URL: {}", database_url);
-
-    // mysql
-    // let pool = MySqlPoolOptions::connect(&DATABASE_URL).await.unwrap();
-    let pool = MySqlPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url).await.unwrap();
-    println!("MySQL pool created Successfully");
-
+    let pool = crate::settings::create_db_pool().await;
     let app = main_router()
         .with_state(Arc::new(AppState { db: pool.clone() }));
 
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3001));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("🚀 Orugu Server running on http://{},update: verify", addr);
 
     // axum::serve(listener, router).await.unwrap()

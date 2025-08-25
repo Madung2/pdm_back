@@ -33,7 +33,7 @@ async fn get_user() { /* ... */ }
 
 
 fn split_db_hash(input: &str) ->(Option<&str>,&str) {
-    if let Some(idx) = input.find("$argon2") {
+    if let Some(_idx) = input.find("$argon2") {
         if let Some((pre, hash)) = input.split_once('|') {
             return (Some(pre), hash);
         }
@@ -43,18 +43,23 @@ fn split_db_hash(input: &str) ->(Option<&str>,&str) {
 
 
 async fn post_login(Json(payload): Json<LoginModel>) -> Result<ApiResponse<LoginModel>, ApiError> {
-    
-    let _payload_user_id = &payload.user_id;
+    let pool = crate::settings::create_db_pool().await;
+    let payload_user_id = &payload.user_id;
     let _payload_passwd  = &payload.passwd;
 
-    // 데모 검증 (추후 argon2 검증으로 교체)
-    // let mock_pass = "pass".to_string();
-    let mock_db_hash = "3|$argon2id$v=19$m=65536,t=4,p=1$MFJCSVBOeGY1eVhKQnBsTw$g6j9pDVcQ1EDF4tK+EWUA2SsRsLlv0voa6Hpm3R8/Gk".to_string();
-    // let mock_db_hash = "$argon2id$v=19$m=65536,t=4,p=1$MFJCSVBOeGY1eVhKQnBsTw$g6j9pDVcQ1EDF4tK+EWUA2SsRsLlv0voa6Hpm3R8/Gk".to_string();
+    let row = sqlx::query!("SELECT password FROM oc_users WHERE uid = ?", payload_user_id)
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to fetch user: {:?}", e);
+            ApiError::Unauthorized
+        })?;
+    let db_hash_bytes = &row.password;
+    let db_hash: String = String::from_utf8_lossy(db_hash_bytes).to_string();
+    println!("real_db_hash: {}", &db_hash);
 
-
-
-    let verify = match utils::verify_password(_payload_passwd, &mock_db_hash) {
+    let (_pre, hash) = split_db_hash(&db_hash);
+    let verify = match utils::verify_password(_payload_passwd, &hash) {
         Ok(v) => v,
         Err(e) => {
             // 여기서 로그 찍기
